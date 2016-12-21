@@ -257,9 +257,23 @@ const githubPagesDeployCommand = Command.extend({
     }
 
     function pushToGitRepo() {
-      return execPromise(`git push origin ${ghPagesBranch}:${destinationBranch}`)
-        .catch((err) => returnStartingBranch()
-          .catch(() => Promise.reject(err) ));
+      return execPromise('git remote -v')
+        .then((stdout) => {
+          let match = stdout.match(/origin\s+(?:https:\/\/|git@)github\.com(?:\:|\/)([^\/]+)/m);
+          let userName = match[1].toLowerCase();
+          let repoName = match[2].toLowerCase();
+          
+          let origin = 'origin'
+          if(options.ghToken) {
+            origin = `https://` + options.ghToken + `@github.com/` + userName + `/` + repoName + `.git`
+          }
+
+          let url = `git push ` + origin + ` ${ghPagesBranch}:${destinationBranch}`;
+
+          return execPromise(url)
+            .catch((err) => returnStartingBranch()
+              .catch(() => Promise.reject(err) ));
+        });      
     }
 
     function printProjectUrl() {
